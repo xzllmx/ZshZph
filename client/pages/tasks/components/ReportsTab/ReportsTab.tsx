@@ -30,6 +30,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
   const [issues, setIssues] = useState<TaskIssue[]>([]);
   const [evidenceRequirements, setEvidenceRequirements] = useState<TaskEvidenceRequirement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Determine which tasks to show based on role (memoized to prevent infinite useEffect loops)
   const relevantTasks = useMemo(() =>
@@ -63,7 +64,9 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
   }, [selectedTaskId, relevantTasks]);
 
   const loadTaskReportData = async (taskId: string) => {
-    setIsLoading(true);
+    if (isInitialLoad) {
+      setIsLoading(true);
+    }
     try {
       // Load task report (may not exist yet)
       const { data: reportData, error: reportError } = await supabase
@@ -131,6 +134,9 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
       // Don't show error toast for missing data - it's expected that reports may not exist yet
     } finally {
       setIsLoading(false);
+      if (isInitialLoad) {
+        setIsInitialLoad(false);
+      }
     }
   };
 
