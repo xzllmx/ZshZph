@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase, Task as TaskType, UserProfile, TaskReport, TaskChecklist, TaskChecklistItem, TaskReportChecklistItem, TaskEvidenceSubmission, TaskIssue, TaskEvidenceRequirement, Attachment } from "../../../../lib/supabase";
+import { supabase, Task as TaskType, UserProfile, TaskReport, TaskChecklist, TaskChecklistItem, TaskReportChecklistItem, TaskEvidenceSubmission, TaskIssue, TaskEvidenceRequirement } from "../../../../lib/supabase";
 import { toast } from "../../../../hooks/use-toast";
 import { useFileUpload } from "../../../../hooks/useFileUpload";
 import EvidenceUploadZone, { FileAttachment } from "../../../../components/EvidenceUploadZone";
