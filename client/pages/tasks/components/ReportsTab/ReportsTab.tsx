@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { supabase, Task as TaskType, UserProfile, TaskReport, TaskChecklist, TaskChecklistItem, TaskReportChecklistItem, TaskEvidenceSubmission, TaskIssue, TaskEvidenceRequirement } from "../../../../lib/supabase";
 import { toast } from "../../../../hooks/use-toast";
 import ProviderReportForm from "./ProviderReportForm";
@@ -30,7 +30,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
   const [issues, setIssues] = useState<TaskIssue[]>([]);
   const [evidenceRequirements, setEvidenceRequirements] = useState<TaskEvidenceRequirement | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const isInitialLoadRef = useRef(true);
 
   // Determine which tasks to show based on role (memoized to prevent infinite useEffect loops)
   const relevantTasks = useMemo(() =>
@@ -64,7 +64,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
   }, [selectedTaskId, relevantTasks]);
 
   const loadTaskReportData = async (taskId: string) => {
-    if (isInitialLoad) {
+    if (isInitialLoadRef.current) {
       setIsLoading(true);
     }
     try {
@@ -134,8 +134,8 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
       // Don't show error toast for missing data - it's expected that reports may not exist yet
     } finally {
       setIsLoading(false);
-      if (isInitialLoad) {
-        setIsInitialLoad(false);
+      if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
       }
     }
   };
