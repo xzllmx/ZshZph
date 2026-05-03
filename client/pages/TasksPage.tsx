@@ -210,6 +210,26 @@ const TasksPage: React.FC = () => {
 
   // ========== SUBSCRIBE TO REALTIME UPDATES ==========
   useEffect(() => {
+    // Subscribe to tasks for real-time updates
+    const tasksSubscription = supabase
+      .channel("tasks")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tasks",
+        },
+        () => {
+          supabase
+            .from("tasks")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .then(({ data }) => setTasks(data || []));
+        }
+      )
+      .subscribe();
+
     // Subscribe to task responses
     const responsesSubscription = supabase
       .channel("task_responses")
@@ -276,6 +296,7 @@ const TasksPage: React.FC = () => {
     }
 
     return () => {
+      tasksSubscription?.unsubscribe();
       responsesSubscription?.unsubscribe();
       proposalsSubscription?.unsubscribe();
       todosSubscription?.unsubscribe();

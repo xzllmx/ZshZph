@@ -154,9 +154,21 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
       onReportUpdated();
     } catch (error) {
       console.error("Error submitting report:", error);
+      let errorDesc = "Failed to submit report";
+
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key") || error.message.includes("23503")) {
+          errorDesc = "Data consistency issue. Please refresh and try again.";
+        } else if (error.message.includes("profile")) {
+          errorDesc = "User profile not properly linked. Please refresh the page.";
+        } else {
+          errorDesc = error.message;
+        }
+      }
+
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit report",
+        description: errorDesc,
         variant: "destructive",
       });
     } finally {
@@ -206,9 +218,19 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
       onReportUpdated();
     } catch (error) {
       console.error("Error uploading evidence:", error);
+      let errorDesc = "Failed to upload evidence";
+
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key") || error.message.includes("23503")) {
+          errorDesc = "Data issue. Please refresh and try again.";
+        } else if (error.message.includes("profile")) {
+          errorDesc = "User profile not linked. Please refresh the page.";
+        }
+      }
+
       toast({
         title: "Error",
-        description: "Failed to upload evidence",
+        description: errorDesc,
         variant: "destructive",
       });
     } finally {
@@ -251,9 +273,58 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
       onReportUpdated();
     } catch (error) {
       console.error("Error raising issue:", error);
+      let errorDesc = "Failed to raise issue";
+
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key") || error.message.includes("23503")) {
+          errorDesc = "Data issue. Please refresh and try again.";
+        } else if (error.message.includes("profile")) {
+          errorDesc = "User profile not linked. Please refresh the page.";
+        }
+      }
+
       toast({
         title: "Error",
-        description: "Failed to raise issue",
+        description: errorDesc,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitForReview = async () => {
+    if (!taskReport) {
+      toast({
+        title: "Error",
+        description: "Please save your progress report first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Update report status to completed_pending_approval
+      await supabase
+        .from("task_reports")
+        .update({
+          status: "completed_pending_approval",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", taskReport.id);
+
+      toast({
+        title: "Success",
+        description: "Report submitted for manager review",
+      });
+
+      onReportUpdated();
+    } catch (error) {
+      console.error("Error submitting for review:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit report for review",
         variant: "destructive",
       });
     } finally {
@@ -264,6 +335,7 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
   const pendingEvidence = evidenceSubmissions.filter((e) => !e.approved_at);
   const approvedEvidence = evidenceSubmissions.filter((e) => e.approved_at);
   const openIssues = issues.filter((i) => i.status === "open");
+  const isReportComplete = percentage === 100 && pendingEvidence.length === 0 && openIssues.length === 0;
 
   return (
     <div className="space-y-6">
@@ -536,6 +608,48 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
           </div>
         )}
       </div>
+
+      {/* Submit for Review */}
+      {taskReport && taskReport.status === "in_progress" && (
+        <div className="bg-white rounded-lg shadow-md p-6 border-2 border-sheraton-gold">
+          <h3 className="text-lg font-semibold text-sheraton-navy mb-4">Ready for Review?</h3>
+          <p className="text-gray-700 mb-4">
+            When you've completed the work and submitted all required evidence, submit your report for manager review.
+          </p>
+          {!isReportComplete && (
+            <p className="text-sm text-orange-600 mb-4">
+              ⚠ Note: You have {pendingEvidence.length} pending evidence submission(s) and {openIssues.length} open issue(s).
+            </p>
+          )}
+          <button
+            onClick={handleSubmitForReview}
+            disabled={isSubmitting || !isReportComplete}
+            className={`w-full px-6 py-3 rounded-lg font-semibold transition-all ${
+              isReportComplete
+                ? "bg-sheraton-gold text-sheraton-navy hover:bg-opacity-90"
+                : "bg-gray-300 text-gray-600 cursor-not-allowed"
+            } disabled:opacity-50`}
+          >
+            {isSubmitting ? "Submitting..." : "✓ Submit Report for Manager Review"}
+          </button>
+        </div>
+      )}
+
+      {taskReport && taskReport.status === "completed_pending_approval" && (
+        <div className="bg-yellow-50 rounded-lg shadow-md p-6 border-2 border-yellow-400">
+          <p className="text-center font-semibold text-yellow-800">
+            ⏳ Report submitted and awaiting manager approval
+          </p>
+        </div>
+      )}
+
+      {taskReport && taskReport.status === "approved" && (
+        <div className="bg-green-50 rounded-lg shadow-md p-6 border-2 border-green-500">
+          <p className="text-center font-semibold text-green-800">
+            ✓ Report approved! Task marked as complete.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

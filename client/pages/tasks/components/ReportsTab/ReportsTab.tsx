@@ -39,7 +39,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
     [tasks, userRole, currentUserProfile?.id]
   );
 
-  // Load data when task selection changes
+  // Load data when task selection changes and set up polling for real-time updates
   useEffect(() => {
     if (!selectedTaskId) {
       if (relevantTasks.length > 0) {
@@ -52,6 +52,13 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
     if (task) {
       setSelectedTask(task);
       loadTaskReportData(selectedTaskId);
+
+      // Poll for real-time updates every 2 seconds
+      const pollInterval = setInterval(() => {
+        loadTaskReportData(selectedTaskId);
+      }, 2000);
+
+      return () => clearInterval(pollInterval);
     }
   }, [selectedTaskId, relevantTasks]);
 
