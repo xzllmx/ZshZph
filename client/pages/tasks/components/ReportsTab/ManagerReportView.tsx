@@ -289,16 +289,34 @@ const ManagerReportView: React.FC<ManagerReportViewProps> = ({
                 ⏳ Pending Review ({pendingEvidence.length})
               </p>
               <div className="space-y-3">
-                {pendingEvidence.map((evidence) => (
-                  <div key={evidence.id} className="bg-white p-3 rounded border border-gray-200">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
+                {pendingEvidence.map((evidence: any) => (
+                  <div key={evidence.id} className="bg-white p-4 rounded border border-gray-200">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1">
                         <p className="font-medium text-gray-800">
                           {evidence.evidence_type.toUpperCase()}
                         </p>
                         {evidence.description && (
                           <p className="text-sm text-gray-600 mt-1">{evidence.description}</p>
                         )}
+
+                        {/* Attachment preview */}
+                        {evidence.attachments && (
+                          <div className="mt-3 p-3 bg-gray-50 rounded">
+                            <a
+                              href={evidence.attachments.b2_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-sheraton-gold hover:underline flex items-center gap-2"
+                            >
+                              📎 {evidence.attachments.original_name}
+                              <span className="text-xs text-gray-500">
+                                ({(evidence.attachments.file_size / 1024 / 1024).toFixed(2)} MB)
+                              </span>
+                            </a>
+                          </div>
+                        )}
+
                         <p className="text-xs text-gray-500 mt-2">
                           Submitted: {new Date(evidence.submitted_at).toLocaleString()}
                         </p>
@@ -306,7 +324,7 @@ const ManagerReportView: React.FC<ManagerReportViewProps> = ({
                       <button
                         onClick={() => handleApproveEvidence(evidence.id)}
                         disabled={isSubmitting}
-                        className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 disabled:opacity-50"
+                        className="px-3 py-2 bg-green-500 text-white text-sm rounded hover:bg-green-600 disabled:opacity-50 whitespace-nowrap"
                       >
                         Approve
                       </button>
@@ -323,15 +341,36 @@ const ManagerReportView: React.FC<ManagerReportViewProps> = ({
               <p className="text-sm font-semibold text-green-800 mb-3">
                 ✓ Approved ({approvedEvidence.length})
               </p>
-              <div className="space-y-2">
-                {approvedEvidence.map((evidence) => (
-                  <div key={evidence.id} className="bg-white p-3 rounded border border-gray-200">
+              <div className="space-y-3">
+                {approvedEvidence.map((evidence: any) => (
+                  <div key={evidence.id} className="bg-white p-4 rounded border border-gray-200">
                     <p className="font-medium text-gray-800">
                       {evidence.evidence_type.toUpperCase()}
                     </p>
                     {evidence.description && (
                       <p className="text-sm text-gray-600 mt-1">{evidence.description}</p>
                     )}
+
+                    {/* Attachment link */}
+                    {evidence.attachments && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded">
+                        <a
+                          href={evidence.attachments.b2_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-sheraton-gold hover:underline flex items-center gap-2"
+                        >
+                          📎 {evidence.attachments.original_name}
+                          <span className="text-xs text-gray-500">
+                            ({(evidence.attachments.file_size / 1024 / 1024).toFixed(2)} MB)
+                          </span>
+                        </a>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-green-700 mt-2">
+                      Approved: {new Date(evidence.approved_at).toLocaleString()}
+                    </p>
                   </div>
                 ))}
               </div>

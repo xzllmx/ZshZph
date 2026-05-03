@@ -52,24 +52,32 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
     const task = relevantTasks.find((t) => t.id === selectedTaskId);
     if (task) {
       setSelectedTask(task);
-      loadTaskReportData(selectedTaskId);
-
-      // Poll for real-time updates every 2 seconds
-      const pollInterval = setInterval(() => {
+      // Only load on initial selection, not on every poll
+      if (isInitialLoadRef.current || !taskReport) {
         loadTaskReportData(selectedTaskId);
-      }, 2000);
+      }
+
+      // Poll for updates every 5 seconds, but only if already loaded
+      const pollInterval = setInterval(() => {
+        if (!isInitialLoadRef.current && taskReport) {
+          loadTaskReportData(selectedTaskId);
+        }
+      }, 5000);
 
       return () => clearInterval(pollInterval);
     }
   }, [selectedTaskId, relevantTasks]);
 
   const loadTaskReportData = async (taskId: string) => {
-    if (isInitialLoadRef.current) {
+    // Only show loading on initial load, not on polls
+    const shouldShowLoading = isInitialLoadRef.current;
+    if (shouldShowLoading) {
       setIsLoading(true);
     }
+
     try {
       // Load task report (may not exist yet)
-      const { data: reportData, error: reportError } = await supabase
+      const { data: reportData } = await supabase
         .from("task_reports")
         .select("*")
         .eq("task_id", taskId)
@@ -77,7 +85,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
       setTaskReport(reportData || null);
 
       // Load checklist (may not exist yet)
-      const { data: checklistData, error: checklistError } = await supabase
+      const { data: checklistData } = await supabase
         .from("task_checklists")
         .select("*")
         .eq("task_id", taskId)
@@ -106,10 +114,21 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
         setReportChecklistItems([]);
       }
 
-      // Load evidence submissions
+      // Load evidence submissions with attachment details
       const { data: evidenceData } = await supabase
         .from("task_evidence_submissions")
-        .select("*")
+        .select(`
+          *,
+          attachments (
+            id,
+            filename,
+            original_name,
+            file_size,
+            mime_type,
+            file_type,
+            b2_url
+          )
+        `)
         .eq("task_id", taskId)
         .order("submitted_at", { ascending: false });
       setEvidenceSubmissions(evidenceData || []);
@@ -123,7 +142,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
       setIssues(issuesData || []);
 
       // Load evidence requirements (may not exist yet)
-      const { data: requirementsData, error: requirementsError } = await supabase
+      const { data: requirementsData } = await supabase
         .from("task_evidence_requirements")
         .select("*")
         .eq("task_id", taskId)
@@ -133,9 +152,11 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
       console.error("Error loading report data:", error);
       // Don't show error toast for missing data - it's expected that reports may not exist yet
     } finally {
-      setIsLoading(false);
-      if (isInitialLoadRef.current) {
-        isInitialLoadRef.current = false;
+      if (shouldShowLoading) {
+        setIsLoading(false);
+        if (isInitialLoadRef.current) {
+          isInitialLoadRef.current = false;
+        }
       }
     }
   };
@@ -202,9 +223,11 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
       )}
 
       {isLoading && (
-        <div className="text-center py-8">
-          <div className="inline-block animate-spin">⏳</div>
-          <p className="text-gray-500 mt-2">Loading report...</p>
+        <div className="text-center py-12">
+          <div className="inline-block">
+            <div className="w-8 h-8 border-4 border-sheraton-gold border-opacity-30 border-t-sheraton-gold rounded-full animate-spin" />
+          </div>
+          <p className="text-gray-500 mt-3 text-sm">Loading report...</p>
         </div>
       )}
     </div>
