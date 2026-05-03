@@ -154,9 +154,21 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
       onReportUpdated();
     } catch (error) {
       console.error("Error submitting report:", error);
+      let errorDesc = "Failed to submit report";
+
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key") || error.message.includes("23503")) {
+          errorDesc = "Data consistency issue. Please refresh and try again.";
+        } else if (error.message.includes("profile")) {
+          errorDesc = "User profile not properly linked. Please refresh the page.";
+        } else {
+          errorDesc = error.message;
+        }
+      }
+
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit report",
+        description: errorDesc,
         variant: "destructive",
       });
     } finally {
@@ -206,9 +218,19 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
       onReportUpdated();
     } catch (error) {
       console.error("Error uploading evidence:", error);
+      let errorDesc = "Failed to upload evidence";
+
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key") || error.message.includes("23503")) {
+          errorDesc = "Data issue. Please refresh and try again.";
+        } else if (error.message.includes("profile")) {
+          errorDesc = "User profile not linked. Please refresh the page.";
+        }
+      }
+
       toast({
         title: "Error",
-        description: "Failed to upload evidence",
+        description: errorDesc,
         variant: "destructive",
       });
     } finally {
@@ -251,9 +273,19 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
       onReportUpdated();
     } catch (error) {
       console.error("Error raising issue:", error);
+      let errorDesc = "Failed to raise issue";
+
+      if (error instanceof Error) {
+        if (error.message.includes("foreign key") || error.message.includes("23503")) {
+          errorDesc = "Data issue. Please refresh and try again.";
+        } else if (error.message.includes("profile")) {
+          errorDesc = "User profile not linked. Please refresh the page.";
+        }
+      }
+
       toast({
         title: "Error",
-        description: "Failed to raise issue",
+        description: errorDesc,
         variant: "destructive",
       });
     } finally {
