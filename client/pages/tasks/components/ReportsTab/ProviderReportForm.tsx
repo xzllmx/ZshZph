@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { supabase, Task as TaskType, UserProfile, TaskReport, TaskChecklist, TaskChecklistItem, TaskReportChecklistItem, TaskEvidenceSubmission, TaskIssue, TaskEvidenceRequirement, Attachment } from "../../../../lib/supabase";
 import { toast } from "../../../../hooks/use-toast";
 import { useFileUpload } from "../../../../hooks/useFileUpload";
-import FileUploadZone, { FileAttachment } from "../../../../components/FileUploadZone";
+import EvidenceUploadZone, { FileAttachment } from "../../../../components/EvidenceUploadZone";
 
 interface ProviderReportFormProps {
   task: TaskType;
@@ -495,9 +495,9 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
                 />
               </div>
 
-              <FileUploadZone
+              <EvidenceUploadZone
                 onFilesSelected={handleFileSelected}
-                acceptedTypes={["image", "video", "file"]}
+                isUploading={isSubmitting}
                 maxFiles={5}
               />
 
