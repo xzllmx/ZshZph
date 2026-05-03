@@ -190,21 +190,28 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      for (const file of files) {
-        const attachment = await uploadFile(file, currentUser.id);
+      // Upload all files (proper B2 upload with attachments table)
+      const filesToUpload = files.map((f) => f.file);
+      const uploadedFiles = await uploadFile(filesToUpload[0], "tasks");
 
-        if (attachment && attachment.id) {
-          await supabase
-            .from("task_evidence_submissions")
-            .insert({
-              task_id: task.id,
-              provider_id: currentUserProfile.id,
-              evidence_type: evidenceType,
-              attachment_id: attachment.id,
-              description: evidenceDescription,
-              submitted_at: new Date().toISOString(),
-            });
-        }
+      if (!uploadedFiles) {
+        throw new Error("Failed to upload file");
+      }
+
+      // Insert into task_evidence_submissions with the attachment_id
+      const { error: insertError } = await supabase
+        .from("task_evidence_submissions")
+        .insert({
+          task_id: task.id,
+          provider_id: currentUserProfile.id,
+          attachment_id: uploadedFiles.attachmentId,
+          evidence_type: evidenceType,
+          description: evidenceDescription,
+          submitted_at: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        throw insertError;
       }
 
       toast({
@@ -225,6 +232,8 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
           errorDesc = "Data issue. Please refresh and try again.";
         } else if (error.message.includes("profile")) {
           errorDesc = "User profile not linked. Please refresh the page.";
+        } else {
+          errorDesc = error.message;
         }
       }
 
@@ -428,13 +437,29 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
 
           {/* Submitted Evidence */}
           {approvedEvidence.length > 0 && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-sm font-medium text-green-800 mb-2">✓ Approved Evidence</p>
-              <div className="space-y-2">
-                {approvedEvidence.map((evidence) => (
-                  <div key={evidence.id} className="text-sm text-gray-700">
-                    <span className="font-medium">{evidence.evidence_type.toUpperCase()}</span>
-                    {evidence.description && <p className="text-gray-600">{evidence.description}</p>}
+            <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-sm font-medium text-green-800 mb-3">✓ Approved Evidence</p>
+              <div className="space-y-3">
+                {approvedEvidence.map((evidence: any) => (
+                  <div key={evidence.id} className="bg-white p-3 rounded border border-gray-200">
+                    <p className="font-medium text-gray-800">{evidence.evidence_type.toUpperCase()}</p>
+                    {evidence.description && <p className="text-sm text-gray-600 mt-1">{evidence.description}</p>}
+
+                    {/* Attachment link */}
+                    {evidence.attachments && (
+                      <a
+                        href={evidence.attachments.b2_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-sheraton-gold hover:underline mt-2 inline-block"
+                      >
+                        📎 {evidence.attachments.original_name}
+                      </a>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      Approved: {new Date(evidence.approved_at).toLocaleString()}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -443,13 +468,29 @@ const ProviderReportForm: React.FC<ProviderReportFormProps> = ({
 
           {/* Pending Evidence */}
           {pendingEvidence.length > 0 && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm font-medium text-yellow-800 mb-2">⏳ Pending Approval</p>
-              <div className="space-y-2">
-                {pendingEvidence.map((evidence) => (
-                  <div key={evidence.id} className="text-sm text-gray-700">
-                    <span className="font-medium">{evidence.evidence_type.toUpperCase()}</span>
-                    {evidence.description && <p className="text-gray-600">{evidence.description}</p>}
+            <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm font-medium text-yellow-800 mb-3">⏳ Pending Approval</p>
+              <div className="space-y-3">
+                {pendingEvidence.map((evidence: any) => (
+                  <div key={evidence.id} className="bg-white p-3 rounded border border-gray-200">
+                    <p className="font-medium text-gray-800">{evidence.evidence_type.toUpperCase()}</p>
+                    {evidence.description && <p className="text-sm text-gray-600 mt-1">{evidence.description}</p>}
+
+                    {/* Attachment link */}
+                    {evidence.attachments && (
+                      <a
+                        href={evidence.attachments.b2_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-sheraton-gold hover:underline mt-2 inline-block"
+                      >
+                        📎 {evidence.attachments.original_name}
+                      </a>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-2">
+                      Submitted: {new Date(evidence.submitted_at).toLocaleString()}
+                    </p>
                   </div>
                 ))}
               </div>

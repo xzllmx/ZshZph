@@ -114,10 +114,21 @@ const ReportsTab: React.FC<ReportsTabProps> = ({
         setReportChecklistItems([]);
       }
 
-      // Load evidence submissions
+      // Load evidence submissions with attachment details
       const { data: evidenceData } = await supabase
         .from("task_evidence_submissions")
-        .select("*")
+        .select(`
+          *,
+          attachments (
+            id,
+            filename,
+            original_name,
+            file_size,
+            mime_type,
+            file_type,
+            b2_url
+          )
+        `)
         .eq("task_id", taskId)
         .order("submitted_at", { ascending: false });
       setEvidenceSubmissions(evidenceData || []);
